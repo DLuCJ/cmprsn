@@ -1,34 +1,34 @@
 TODO:
 
-VERSION_1: BASIC MOFFAT-TURPIN VARIANT          //MTHUFF_H    
-VERSION 2: ADD TABLE-ACCELERATED DECODE         //MTTAHUFF_H    
-VERSION_3: ADD MOFFAT-TURPIN FAST DECODE        //MTFDHUFF_H    
-VERSION_4: ADD NELSON VARIANT AND BENCHMARK     //NELSONHUFF_H    
+VERSION_1: BASIC MOFFAT-TURPIN VARIANT          
+VERSION 2: ADD TABLE-ACCELERATED DECODE         
+VERSION_3: ADD MOFFAT-TURPIN FAST DECODE        
+VERSION_4: ADD NELSON VARIANT AND BENCHMARK    
 
-Here's my understanding of Moffat-Turpin:
+Here's my understanding of Moffat-Turpin (a lot of it courtesy of cbloom):
 
 We have an n-symbol alphabet with n corresponding frequencies in the data.  Given a probability-sorted list of these freqs, we can find the corresponding codelens.  See moffat-katajainen / Polar for example.  And from the codelens and assoc symbols, we can create
 the codes:
 
-code lens :
+code lens :    
 
-c : 1
-b : 2
-a : 3
-d : 3
+c : 1    
+b : 2    
+a : 3    
+d : 3    
+    
+[code=0]    
 
-[code=0]
-
-c : [0]
-    code ++ [1]
-    len diff = (2-1) so code <<= 1 [10]
-b : [10]
-    code ++ [11]
-    len diff = (3-2) so code <<= 1 [110]
-a : [110]
-    code ++ [111]
-    no len diff
-d : [111]
+c : [0]    
+    code ++ [1]    
+    len diff = (2-1) so code <<= 1 [10]    
+b : [10]    
+    code ++ [11]    
+    len diff = (3-2) so code <<= 1 [110]    
+a : [110]    
+    code ++ [111]    
+    no len diff    
+d : [111]    
 
 Note that Moffat-Turpin employ a nearly identical scheme, except that they start the most probable symbol off with a code of all 1 bits and subtract instead of add.  When the length increases, Moffat-Turpin left shift and then subtract, as opposed to
 add and then left shift.  And we've actually got an algo to do this now, which you can see in the corresponding gist.
