@@ -102,10 +102,10 @@ where 0s represent alphabet symbols with frequency 0.  For groups of 0s, we can 
 some such to conserve space.  We can use the Nelson format for example.  Then to build out our codes, we order by 
 codelen and then by symbol numbering within that codelen.
 
-For example:
-codeLen 4 : symbols 7, 33, 48
-codeLen 5 : symbols 1, 6, 8, 40 , 44
-codeLen 7 : symbols 3, 5, 22
+For example:    
+codeLen 4 : symbols 7, 33, 48    
+codeLen 5 : symbols 1, 6, 8, 40 , 44    
+codeLen 7 : symbols 3, 5, 22    
 
 And now we know how to generate our base and offset tables, and our symbol_ids, because the probabilities are implicit. 
 Smaller codelens have lower probability, and lower symbols will be coded with lower codes within that grouping.  
