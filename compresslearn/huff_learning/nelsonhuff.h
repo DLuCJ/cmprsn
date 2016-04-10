@@ -1,0 +1,4 @@
+#ifndef NELSONHUFF_H
+#define NELSONHUFF_H
+
+#endif //NELSONHUFF_H
