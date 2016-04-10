@@ -117,7 +117,11 @@ int main(void)
   stats.count_freqs(src_buf, src_size);
   stats.normalize_freqs(scalefreq);
   
-  
+  uint8_t* enc_buf = new uint8_t[src_size + src_size / 4];
+  uint8_t* dec_buf = new uint8_t[src_size];
+
+  memset(dec_buf, 0xcc, src_size);
+
   printf("huff_learn encode:\n");
   for (int run=0; run < 5; run++) {
     double start_time = timer();
@@ -130,6 +134,7 @@ int main(void)
     printf("%"PRIu64" clocks, %.1f clocks/symbol (%5.1fMiB/s)\n", enc_clocks, 1.0 * enc_clocks / src_size, 1.0 * src_size / (enc_time * 1048576.0));
   }
 
+  //TODO:
   printf("\nCompressed: %i bytes\n", 1337);
 
   printf("\nhuff_learn decode:\n");
@@ -144,14 +149,18 @@ int main(void)
     printf("%"PRIu64" clocks, %.1f clocks/symbol (%5.1fMiB/s)\n", dec_clocks, 1.0 * dec_clocks / src_size, 1.0 * src_size / (dec_time * 1048576.0));
     }
 
+  
+  // check decode results
+  
+  if (memcmp(src_buf, dec_buf, src_size) == 0)
+    printf("\ndecode ok!\n");
+  else
+    printf("\nERROR: bad decoder!\n");
 
-   // check decode results
-  /*
-    if (memcmp(src_buf, dec_buf, src_size) == 0)
-        printf("decode ok!\n");
-    else
-        printf("ERROR: bad decoder!\n");
-  */
+  delete[] enc_buf;
+  delete[] dec_buf;
+  delete[] src_buf;
+  
   return 0;
 }
 
