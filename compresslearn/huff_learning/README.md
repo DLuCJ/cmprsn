@@ -31,7 +31,7 @@ a : [110]
 d : [111]    
 
 Note that Moffat-Turpin employ a nearly identical scheme, except that they start the most probable symbol off with a code of all 1 bits and subtract instead of add.  When the length increases, Moffat-Turpin left shift and then subtract, as opposed to
-add and then left shift.  And we've actually got an algo to do this now, which you can see in the corresponding gist.
+add and then left shift.  
 
 Then we can encode our data by doing the following:
 code <- base[length] + (symbol_id - offset[length])       //find the basecode and add i for the ith symbol with that length
