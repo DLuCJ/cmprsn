@@ -5,7 +5,7 @@ VERSION 2: ADD TABLE-ACCELERATED DECODE
 VERSION_3: ADD MOFFAT-TURPIN FAST DECODE        
 VERSION_4: ADD NELSON VARIANT AND BENCHMARK    
 
-Here's my understanding of Moffat-Turpin (a lot of it courtesy of cbloom):
+Here's my (current, maybe wrong) understanding of Moffat-Turpin (a lot of it courtesy of cbloom):
 
 We have an n-symbol alphabet with n corresponding frequencies in the data.  Given a probability-sorted list of these freqs, we can find the corresponding codelens.  See moffat-katajainen / Polar for example.  And from the codelens and assoc symbols, we can create
 the codes:
