@@ -117,10 +117,14 @@ int main(void)
   stats.count_freqs(src_buf, src_size);
   stats.normalize_freqs(scalefreq);
   
+  /*malloc these, free later instead of delete*/
   uint8_t* enc_buf = new uint8_t[src_size + src_size / 4];
   uint8_t* dec_buf = new uint8_t[src_size];
 
   memset(dec_buf, 0xcc, src_size);
+
+  BIO_Data bd_enc;
+  BIO_Init(&bd_enc, (void *)enc_buf, src_size + src_size / 4); 
 
   printf("huff_learn encode:\n");
   for (int run=0; run < 5; run++) {
