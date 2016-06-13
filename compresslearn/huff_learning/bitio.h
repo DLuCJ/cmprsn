@@ -5,21 +5,12 @@
 #include <string.h>
 #include <assert.h>
 
-/* TODO: ROBUST ERROR HANDLING */
+/* TODO: Error handling */
 
-static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size);
-static inline int BIO_WriteCloseStatus(BIO_Data *data, size_t eob, size_t nbits);
-static inline unsigned int BIO_ReadCloseStatus(BIO_Data *data);
-
-static inline void BIO_WriteBits(BIO_Data *data, size_t val, size_t nbits);
-static inline void BIO_FlushBits(BIO_Data *data);
-
-static inline void BIO_PeekBits(BIO_Data *data, size_t nbits);
-static inline void BIO_ConsumeBits(BIO_Data *data, size_t nbits);
-static inline size_t BIO_ReadBits(BIO_Data *data, size_t nbits);
-static inline BIO_Dec_Status BIO_ReloadDataBuf(BIO_Data *data);
-
-static const size_t REGBITS = (sizeof(size_t) * 8);
+/*
+  Bitio functions. 
+  TODO: Basic docu, usage explanation
+*/
 
 typedef struct 
 {
@@ -31,6 +22,44 @@ typedef struct
   uint8_t *end;
 } BIO_Data; 
 
+/******************************************* 
+   bitio common init / deinit 
+********************************************/
+static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size);
+static inline int BIO_WriteCloseStatus(BIO_Data *data, size_t eob, size_t nbits);
+static inline unsigned int BIO_ReadCloseStatus(BIO_Data *data);
+
+
+
+/*******************************************
+ bitio encode API 
+********************************************/
+static inline void BIO_WriteBits(BIO_Data *data, size_t val, size_t nbits);
+static inline void BIO_FlushBits(BIO_Data *data);
+
+
+
+/*******************************************
+bitio decode API 
+********************************************/
+static inline void BIO_PeekBits(BIO_Data *data, size_t nbits);
+static inline void BIO_ConsumeBits(BIO_Data *data, size_t nbits);
+static inline size_t BIO_ReadBits(BIO_Data *data, size_t nbits);
+
+/* Return codes for BIO_ReloadDataBuf */
+typedef enum 
+  { 
+    BIO_Dec_Incomplete = 0,
+    BIO_Dec_EndOfBuf = 1,
+    BIO_Dec_Complete = 2 
+  } BIO_Dec_Status;
+
+static inline BIO_Dec_Status BIO_ReloadDataBuf(BIO_Data *data);
+
+
+
+/********************************************************************************************/
+static const size_t REGBITS = (sizeof(size_t) * 8);
 static const unsigned BIO_mask[] = { 0, 1, 3, 7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF,
 				     0x3FFF, 0x7FFF, 0xFFFF, 0x1FFFF, 0x3FFFF, 0x7FFFF, 0xFFFFF, 0x1FFFFF, 0x3FFFFF,
 				     0x7FFFFF,  0xFFFFFF, 0x1FFFFFF, 0x3FFFFFF };   /* up to 26 bits */
@@ -106,8 +135,6 @@ static inline unsigned int BIO_ReadCloseStatus(BIO_Data *data)
   return ((data->ptr == data->end) && ((REGBITS - data->bit_pos) == sizeof(data->bit_buf) * 8));
 }
 
-/****************************************************************************/
-
 static inline void BIO_PeekBits(BIO_Data *data, size_t nbits)
 {
   return (data->bit_buf >> (REGBITS - (data->bit_pos + nbits))) & BIO_mask[nbits]; 
@@ -128,14 +155,6 @@ static inline size_t BIO_ReadBits(BIO_Data *data, size_t nbits)
   BIO_ConsumeBits(data, nbits);
   return val;
 }
-
-/* Return codes for BIO_ReloadDataBuf */
-typedef enum 
-  { 
-    BIO_Dec_Incomplete = 0,
-    BIO_Dec_EndOfBuf = 1,
-    BIO_Dec_Complete = 2 
-  } BIO_Dec_Status;
 
 /*
   Refills bit_buf from data buffer.  
