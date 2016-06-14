@@ -6,6 +6,10 @@
 #include <string.h>
 #include <assert.h>
 
+#include "bitio.h"
+
+#define DEBUG
+
 static void panic(const char *fmt, ...)
 {
   va_list arg;
@@ -108,6 +112,11 @@ void SymbolStats::normalize_freqs(uint8_t max_val)
 
 int main(void)
 {
+
+#ifdef DEBUG
+  BIO_Validate();
+#endif
+
   size_t src_size;
   uint8_t *src_buf = read_file("../../book1", &src_size);
   
@@ -117,14 +126,13 @@ int main(void)
   stats.count_freqs(src_buf, src_size);
   stats.normalize_freqs(scalefreq);
   
-  /*malloc these, free later instead of delete*/
   uint8_t* enc_buf = new uint8_t[src_size + src_size / 4];
   uint8_t* dec_buf = new uint8_t[src_size];
 
   memset(dec_buf, 0xcc, src_size);
 
   BIO_Data bd_enc;
-  BIO_Init(&bd_enc, (void *)enc_buf, src_size + src_size / 4); 
+  BIO_Init(&bd_enc, (void *)enc_buf, src_size + src_size / 4, ENCODE); 
 
   printf("huff_learn encode:\n");
   for (int run=0; run < 5; run++) {
@@ -138,8 +146,7 @@ int main(void)
     printf("%"PRIu64" clocks, %.1f clocks/symbol (%5.1fMiB/s)\n", enc_clocks, 1.0 * enc_clocks / src_size, 1.0 * src_size / (enc_time * 1048576.0));
   }
 
-  //TODO:
-  printf("\nCompressed: %i bytes\n", 1337);
+  printf("MTHUFF: %d bytes\n", (int)(bd_enc->ptr - bd_enc->start) + 1;
 
   printf("\nhuff_learn decode:\n");
   for (int run=0; run < 5; run++) {
@@ -153,9 +160,7 @@ int main(void)
     printf("%"PRIu64" clocks, %.1f clocks/symbol (%5.1fMiB/s)\n", dec_clocks, 1.0 * dec_clocks / src_size, 1.0 * src_size / (dec_time * 1048576.0));
     }
 
-  
   // check decode results
-  
   if (memcmp(src_buf, dec_buf, src_size) == 0)
     printf("\ndecode ok!\n");
   else

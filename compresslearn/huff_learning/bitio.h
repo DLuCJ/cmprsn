@@ -25,7 +25,10 @@ typedef struct
 /******************************************* 
    bitio common init / deinit 
 ********************************************/
-static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size);
+#define DECODE 1
+#define ENCODE 0
+static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size, unsigned is_decode);
+
 static inline int BIO_WriteCloseStatus(BIO_Data *data, size_t eob, size_t nbits);
 static inline unsigned int BIO_ReadCloseStatus(BIO_Data *data);
 
@@ -65,7 +68,7 @@ static const unsigned BIO_mask[] = { 0, 1, 3, 7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x
 				     0x7FFFFF,  0xFFFFFF, 0x1FFFFFF, 0x3FFFFFF };   /* up to 26 bits */
 
 /* TODO: Add decode option, so can prefill bit_buf on init? Right now have to first call a reload */
-static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size)
+static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size, unsigned is_decode)
 {
   data->bit_buf = 0;
   data->bit_pos = REGBITS;
@@ -74,7 +77,14 @@ static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size)
   data->ptr = data->start;
   data->end = data->start + dst_size - sizeof(data->ptr);
 
-  if(dst_size < sizeof(data->ptr))
+  if (is_decode) {
+    size_t val;
+    memmove(&val, data->ptr, sizeof(val));
+    data->bit_buf = val;
+    data->ptr++;
+  }
+
+  if(dst_size <= sizeof(data->ptr))
     return -1;
 
   return 0;
@@ -215,16 +225,17 @@ void BIO_Validate()
   uint8_t test_data[td_size];
   memset(test_data, 0, td_size);
   
-  BIO_Init(&bd, test_data, td_size);
+  BIO_Init(&bd, test_data, td_size, ENCODE);
   
   for (int i = 0; i < 6; ++i) {    
     BIO_WriteBits(&bd, 2, 2);
     BIO_WriteBits(&bd, 12, 4);
     
-    if ((i % 2) == 0)
+    if ((i % 2) == 0) {
       BIO_WriteBits(&bd, 56, 6);
     else {
       BIO_WriteBits(&bd, 7, 3);
+      //BIO_FlushBits(&bd);
       BIO_WriteBits(&bd, 0, 3);
     }
     
@@ -236,7 +247,7 @@ void BIO_Validate()
   assert(wcs > 0);
   
   BIO_data bdr;
-  BIO_Init(&bdr, bd->start, wcs);
+  BIO_Init(&bdr, bd->start, wcs, DECODE);
   
   for (int i = 0; i < 6; ++i) {    
     assert(BIO_ReadBits(&bdr, 2) == 2);
@@ -246,6 +257,7 @@ void BIO_Validate()
       assert(BIO_ReadBits(&bdr, 6) == 56);
     else {
       assert(BIO_ReadBits(&bdr, 3) == 7);
+      //BIO_ReloadDataBuf(&bdr);
       assert(BIO_ReadBits(&bdr, 3) == 0);
     }
     
