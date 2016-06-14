@@ -67,7 +67,6 @@ static const unsigned BIO_mask[] = { 0, 1, 3, 7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x
 				     0x3FFF, 0x7FFF, 0xFFFF, 0x1FFFF, 0x3FFFF, 0x7FFFF, 0xFFFFF, 0x1FFFFF, 0x3FFFFF,
 				     0x7FFFFF,  0xFFFFFF, 0x1FFFFFF, 0x3FFFFFF };   /* up to 26 bits */
 
-/* TODO: Add decode option, so can prefill bit_buf on init? Right now have to first call a reload */
 static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size, unsigned is_decode)
 {
   data->bit_buf = 0;

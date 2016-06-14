@@ -146,31 +146,30 @@ int main(void)
     printf("%"PRIu64" clocks, %.1f clocks/symbol (%5.1fMiB/s)\n", enc_clocks, 1.0 * enc_clocks / src_size, 1.0 * src_size / (enc_time * 1048576.0));
   }
 
-  printf("MTHUFF: %d bytes\n", (int)(bd_enc->ptr - bd_enc->start) + 1;
-
+  printf("MTHUFF: %d bytes\n", (int)(bd_enc->ptr - bd_enc->start) + 1);
+  
   printf("\nhuff_learn decode:\n");
   for (int run=0; run < 5; run++) {
     double start_time = timer();
     uint64_t dec_start_time = __rdtsc();
     
     //TODO:
-
+    
     uint64_t dec_clocks = __rdtsc() - dec_start_time;
     double dec_time = timer() - start_time;
     printf("%"PRIu64" clocks, %.1f clocks/symbol (%5.1fMiB/s)\n", dec_clocks, 1.0 * dec_clocks / src_size, 1.0 * src_size / (dec_time * 1048576.0));
-    }
-
+  }
+  
   // check decode results
   if (memcmp(src_buf, dec_buf, src_size) == 0)
     printf("\ndecode ok!\n");
   else
     printf("\nERROR: bad decoder!\n");
-
+  
   delete[] enc_buf;
   delete[] dec_buf;
   delete[] src_buf;
   
   return 0;
 }
-
  
