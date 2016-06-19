@@ -8,6 +8,7 @@
 
 #define _CRT_SECURE_NO_DEPRECATE
 #include <intrin.h>
+#include <stdlib.h>
 #define ALIGNSPEC(type,name,alignment) __declspec(align(alignment)) type name
 
 #elif defined(__GNUC__)
