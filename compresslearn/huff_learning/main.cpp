@@ -146,7 +146,7 @@ int main(void)
     printf("%"PRIu64" clocks, %.1f clocks/symbol (%5.1fMiB/s)\n", enc_clocks, 1.0 * enc_clocks / src_size, 1.0 * src_size / (enc_time * 1048576.0));
   }
 
-  printf("MTHUFF: %d bytes\n", (int)(bd_enc.ptr - bd_enc.start) + 1);
+  printf("\nMTHUFF: %d bytes\n", (int)(bd_enc.ptr - bd_enc.start) + 1);
   
   printf("\nhuff_learn decode:\n");
   for (int run=0; run < 5; run++) {

@@ -152,18 +152,34 @@ bitio decode API
   */
   static inline void BIO_FlushBits(BIO_Data *data)
   {
-    size_t nbits = REGBITS - data->bit_pos;
-    size_t nbytes =  nbits >> 3;
- 
-    size_t val = BIO_MemSwap(data->bit_buf);
-    memmove(data->ptr, &val, sizeof(val));
-    data->ptr += nbytes;
- 
+	size_t val = BIO_MemSwap(data->bit_buf);
+	memmove(data->ptr, &val, sizeof(val));
+	
+	unsigned skipflg = 0;
+	size_t nbits = 0;
+	size_t nbytes = 0;
+
+	/* TODO: Maybe not allow flushes on word boundary?*/
+	if (data->bit_pos == 0) {
+		skipflg = 1;
+		data->bit_buf = 0;
+		data->bit_pos = REGBITS;
+		data->ptr += sizeof(size_t);
+	}
+	else {
+		nbits = REGBITS - data->bit_pos;
+		nbytes = nbits >> 3;
+		data->ptr += nbytes;
+	}
+
     if(data->ptr > data->end)
       data->ptr = data->end;
+
+	/* Reset to leftover bits */
  
-    /* Reset to leftover bits */
- 
+	if (skipflg)
+		return;
+
     data->bit_pos = REGBITS - (nbits % 8);
     data->bit_buf <<= (nbytes * 8);
   }
@@ -280,19 +296,18 @@ bitio decode API
     BIO_Init(&bd, test_data, td_size, ENCODE);
  
     for (int i = 0; i < 6; ++i) {    
-      BIO_WriteBits(&bd, 2, 2);
-      BIO_WriteBits(&bd, 12, 4);
+      BIO_WriteBits(&bd, 2, 2);  //10
+      BIO_WriteBits(&bd, 12, 4); //1100
       if ((i % 2) == 0) {
-	BIO_WriteBits(&bd, 56, 6);
-	BIO_WriteBits(&bd, 240, 8);
+		BIO_WriteBits(&bd, 56, 6); //111000
+		BIO_WriteBits(&bd, 240, 8);  //11110000
       }
       else {
-	BIO_WriteBits(&bd, 7, 3);
-	BIO_WriteBits(&bd, 0, 3);
-	BIO_WriteBits(&bd, 30, 5);
-	BIO_WriteBits(&bd, 0, 3);
+		BIO_WriteBits(&bd, 7, 3); //111
+		BIO_WriteBits(&bd, 0, 3); //000
+		BIO_WriteBits(&bd, 30, 5); //11110
+		BIO_WriteBits(&bd, 0, 3); //000
       }
-      BIO_FlushBits(&bd);
     }
     BIO_WriteBits(&bd, 5815, 13);
     size_t wcs = BIO_WriteCloseStatus(&bd, 255, 8);
@@ -302,31 +317,29 @@ bitio decode API
     BIO_Init(&bdr, bd.start, wcs, DECODE);
  
     for (int i = 0; i < 6; ++i) {    
-      assert(BIO_ReadBits(&bdr, 1) == 1);
-      assert(BIO_ReadBits(&bdr, 1) == 0);
+      assert(BIO_ReadBits(&bdr, 1) == 1); //1
+      assert(BIO_ReadBits(&bdr, 1) == 0); //0
       if ((i % 2) == 0) {
-	assert(BIO_ReadBits(&bdr, 5) == 25);
-	assert(BIO_ReadBits(&bdr, 3) == 6);
-	assert(BIO_ReadBits(&bdr, 2) == 0);
-	assert(BIO_ReadBits(&bdr, 8) == 240);
+		assert(BIO_ReadBits(&bdr, 5) == 25); //11001
+		assert(BIO_ReadBits(&bdr, 3) == 6); //110
+		assert(BIO_ReadBits(&bdr, 2) == 0); //00
+		assert(BIO_ReadBits(&bdr, 8) == 240); //11110000
       }
-      else
-	assert(BIO_ReadBits(&bdr, 18) == 211184);
-      if (i < 4)
-	assert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_Incomplete);
-      else
-	assert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);
-    }
+	  else 
+		assert(BIO_ReadBits(&bdr, 18) == 211184); //110011100011110000
+	}
    
     assert(BIO_ReadBits(&bdr, 10) == 726);
     assert(BIO_ReadBits(&bdr, 3) == 7);
     assert(BIO_ReadBits(&bdr, 8) == 255);
     //assert(BIO_ReadCloseStatus(&bdr));
+	assert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);
 
-    /* TODO: step through, maybe add in a few more reloads/flushes afterwards  */
     /* TODO: exercise end of buffer functionality */
-    /* TODO: make sure reload returns expected values: currently asserts behave different in vs debug vs thru build script? */     
-    /* TODO: flush maybe wrong when not on byte boundary */
+    
+	/* TODO: make sure reload returns expected values.  
+		Should probably drop breakpoint into reads during validate loop */     
+
     /* TODO: rethink ReadCloseStatus.  not what i want to be checking. */
   }
 
