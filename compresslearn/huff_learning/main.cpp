@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <assert.h>
 
 #include "bitio.h"
 
@@ -96,7 +95,7 @@ void SymbolStats::normalize_freqs(uint8_t max_val)
 	  best_steal = j;
 	}
       }
-      assert(best_steal != -1);
+      Assert(best_steal != -1);
 
       normfreqs[best_steal]--;
       normfreqs[i]++;
@@ -104,10 +103,10 @@ void SymbolStats::normalize_freqs(uint8_t max_val)
   }
   
   for (int i = 0; i < 256; i++) {
-    if (freqs[i]) assert(normfreqs[i]);
+    if (freqs[i]) Assert(normfreqs[i]);
   }
 
-  assert(normfreqs[max_idx] == max_val); 
+  Assert(normfreqs[max_idx] == max_val); 
 }
 
 int main(void)

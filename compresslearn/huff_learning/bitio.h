@@ -3,12 +3,17 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <assert.h>
 
 #include "platform.h"
 
 /* TODO: Error handling */
 /* TODO: Docu, eg read/write left to right, big endian mem layout*/
+
+#ifdef NDEBUG
+#define BIOAssert(x)
+#else
+#define BIOAssert Assert
+#endif
 
 #if defined (__cplusplus)
 extern "C" {
@@ -240,7 +245,7 @@ bitio decode API
   */
   static inline BIO_Dec_Status BIO_ReloadDataBuf(BIO_Data *data)
   {  
-    assert(data->bit_pos >= 0);
+    BIOAssert(data->bit_pos >= 0);
  
     size_t nbits = REGBITS - data->bit_pos;
     size_t nbytes = nbits >> 3;
@@ -284,7 +289,7 @@ bitio decode API
     write bit str: 10110011100011110000...repeat 6 times
     end val: 0xFF 
   */
-  /* NOTE: Currently passing all asserts */
+  /* NOTE: Currently passing all BIOAsserts */
   void BIO_Validate()
   {
     BIO_Data bd;
@@ -311,29 +316,29 @@ bitio decode API
     }
     BIO_WriteBits(&bd, 5815, 13);
     size_t wcs = BIO_WriteCloseStatus(&bd, 255, 8);
-    assert(wcs > 0);
+    BIOAssert(wcs > 0);
  
     BIO_Data bdr;
     BIO_Init(&bdr, bd.start, wcs, DECODE);
  
     for (int i = 0; i < 6; ++i) {    
-      assert(BIO_ReadBits(&bdr, 1) == 1); //1
-      assert(BIO_ReadBits(&bdr, 1) == 0); //0
+      BIOAssert(BIO_ReadBits(&bdr, 1) == 1); //1
+      BIOAssert(BIO_ReadBits(&bdr, 1) == 0); //0
       if ((i % 2) == 0) {
-		assert(BIO_ReadBits(&bdr, 5) == 25); //11001
-		assert(BIO_ReadBits(&bdr, 3) == 6); //110
-		assert(BIO_ReadBits(&bdr, 2) == 0); //00
-		assert(BIO_ReadBits(&bdr, 8) == 240); //11110000
+		BIOAssert(BIO_ReadBits(&bdr, 5) == 25); //11001
+		BIOAssert(BIO_ReadBits(&bdr, 3) == 6); //110
+		BIOAssert(BIO_ReadBits(&bdr, 2) == 0); //00
+		BIOAssert(BIO_ReadBits(&bdr, 8) == 240); //11110000
       }
 	  else 
-		assert(BIO_ReadBits(&bdr, 18) == 211184); //110011100011110000
+		BIOAssert(BIO_ReadBits(&bdr, 18) == 211184); //110011100011110000
 	}
    
-    assert(BIO_ReadBits(&bdr, 10) == 726);
-    assert(BIO_ReadBits(&bdr, 3) == 7);
-    assert(BIO_ReadBits(&bdr, 8) == 255);
-    //assert(BIO_ReadCloseStatus(&bdr));
-	assert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);
+    BIOAssert(BIO_ReadBits(&bdr, 10) == 726);
+    BIOAssert(BIO_ReadBits(&bdr, 3) == 7);
+    BIOAssert(BIO_ReadBits(&bdr, 8) == 255);
+    //BIOAssert(BIO_ReadCloseStatus(&bdr));
+	BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);
 
     /* TODO: exercise end of buffer functionality */
     

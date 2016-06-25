@@ -2,6 +2,23 @@
 #ifndef PLATFORM_H_INCLUDED
 #define PLATFORM_H_INCLUDED
 
+//assert
+
+#ifdef NDEBUG
+#define BIOAssert(x)
+#else
+#if defined(_MSC_VER)
+#define Assert(x) \
+    do {if (!(x)) { MessageBoxA(0, #x, "Assertion Failure", MB_OK); __debugbreak(); }} while(0)
+#else
+#ifdef assert 
+#define Assert assert
+#else
+#define Assert(x)
+#endif
+#endif
+#endif
+
 // x86 intrinsics (__rdtsc etc.)
 
 #if defined(_MSC_VER)
