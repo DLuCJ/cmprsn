@@ -5,9 +5,10 @@
 //assert
 
 #ifdef NDEBUG
-#define BIOAssert(x)
+#define Assert(x)
 #else
 #if defined(_MSC_VER)
+#pragma warning (disable: 4127)
 #define Assert(x) \
     do {if (!(x)) { MessageBoxA(0, #x, "Assertion Failure", MB_OK); __debugbreak(); }} while(0)
 #else

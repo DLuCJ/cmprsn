@@ -36,7 +36,7 @@ extern "C" {
 #define ENCODE 0
   static inline int BIO_Init(BIO_Data *data, void *dst, size_t dst_size, unsigned is_decode);
 
-  static inline int BIO_WriteCloseStatus(BIO_Data *data, size_t eob, size_t nbits);
+  static inline size_t BIO_WriteCloseStatus(BIO_Data *data, size_t eob, size_t nbits);
   static inline unsigned int BIO_ReadCloseStatus(BIO_Data *data);
 
 
@@ -195,7 +195,7 @@ bitio decode API
     Returns 0 if bounds exceeded.
   */
 
-  static inline int BIO_WriteCloseStatus(BIO_Data *data, size_t eob, size_t nbits)
+  static inline size_t BIO_WriteCloseStatus(BIO_Data *data, size_t eob, size_t nbits)
   { 
     BIO_WriteBits(data, eob, nbits);
     BIO_FlushBits(data);
