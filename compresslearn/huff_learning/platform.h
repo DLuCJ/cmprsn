@@ -2,6 +2,8 @@
 #ifndef PLATFORM_H_INCLUDED
 #define PLATFORM_H_INCLUDED
 
+#include <stddef.h> /* size_t */
+
 //assert
 
 #ifdef NDEBUG

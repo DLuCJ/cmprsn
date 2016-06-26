@@ -128,7 +128,7 @@ bitio decode API
     data->end = data->start + dst_size - sizeof(data->ptr);
 
     if (is_decode) {
-      size_t val;
+      size_t val = 0;
       memmove(&val, data->ptr, sizeof(val));
       data->bit_buf = BIO_MemSwap(val);
     }
@@ -145,7 +145,7 @@ bitio decode API
   */
   static inline void BIO_WriteBits(BIO_Data *data, size_t val, size_t nbits)
   {
-    if (data->bit_pos < (int)nbits)
+    if (data->bit_pos < nbits)
       BIO_FlushBits(data);
     data->bit_pos -= (int)nbits;
     data->bit_buf |= ((val & BIO_mask[nbits]) << data->bit_pos);
@@ -157,33 +157,33 @@ bitio decode API
   */
   static inline void BIO_FlushBits(BIO_Data *data)
   {
-	size_t val = BIO_MemSwap(data->bit_buf);
-	memmove(data->ptr, &val, sizeof(val));
+    size_t val = BIO_MemSwap(data->bit_buf);
+    memmove(data->ptr, &val, sizeof(val));
 	
-	unsigned skipflg = 0;
-	size_t nbits = 0;
-	size_t nbytes = 0;
+    unsigned skipflg = 0;
+    size_t nbits = 0;
+    size_t nbytes = 0;
 
-	/* TODO: Maybe not allow flushes on word boundary?*/
-	if (data->bit_pos == 0) {
-		skipflg = 1;
-		data->bit_buf = 0;
-		data->bit_pos = REGBITS;
-		data->ptr += sizeof(size_t);
-	}
-	else {
-		nbits = REGBITS - data->bit_pos;
-		nbytes = nbits >> 3;
-		data->ptr += nbytes;
-	}
+    /* TODO: Maybe not allow flushes on word boundary?*/
+    if (data->bit_pos == 0) {
+      skipflg = 1;
+      data->bit_buf = 0;
+      data->bit_pos = REGBITS;
+      data->ptr += sizeof(size_t);
+    }
+    else {
+      nbits = REGBITS - data->bit_pos;
+      nbytes = nbits >> 3;
+      data->ptr += nbytes;
+    }
 
     if(data->ptr > data->end)
       data->ptr = data->end;
 
-	/* Reset to leftover bits */
+    /* Reset to leftover bits */
  
-	if (skipflg)
-		return;
+    if (skipflg)
+      return;
 
     data->bit_pos = REGBITS - (nbits % 8);
     data->bit_buf <<= (nbytes * 8);
@@ -203,7 +203,7 @@ bitio decode API
     if(data->ptr >= data->end) 
       return 0;
    
-    return (data->ptr - data->start) + (data->bit_pos > 0);
+    return (data->ptr - data->start) + (data->bit_pos < REGBITS);
   }
 
   /*
@@ -218,7 +218,6 @@ bitio decode API
   static inline size_t BIO_PeekBits(BIO_Data *data, size_t nbits)
   {
     return (data->bit_buf >> (data->bit_pos - nbits)) & BIO_mask[nbits]; 
-    // return (bit_buf << (REGBITS- data->bit_pos)) >> (REGBITS - nbits);
   }
 
   static inline void BIO_ConsumeBits(BIO_Data *data, size_t nbits)
@@ -231,7 +230,7 @@ bitio decode API
   */
   static inline size_t BIO_ReadBits(BIO_Data *data, size_t nbits)
   {
-    if (data->bit_pos < (int)nbits)
+    if (data->bit_pos < nbits)
       BIO_ReloadDataBuf(data);
     size_t const val = BIO_PeekBits(data, nbits);
     BIO_ConsumeBits(data, nbits);
@@ -244,7 +243,7 @@ bitio decode API
     Returns status code as specified.
   */
   static inline BIO_Dec_Status BIO_ReloadDataBuf(BIO_Data *data)
-  {  
+  { 
     BIOAssert(data->bit_pos >= 0);
  
     size_t nbits = REGBITS - data->bit_pos;
@@ -254,15 +253,14 @@ bitio decode API
       data->ptr += nbytes;		    
       data->bit_pos = REGBITS - (nbits % 8);
    
-      size_t val;
+      size_t val = 0;
       memmove(&val, data->ptr, sizeof(val));
       data->bit_buf = BIO_MemSwap(val);
       return BIO_Dec_Incomplete;
     }
 
     if (data->ptr == data->end) {
-      if (data->bit_pos < REGBITS)
-	return BIO_Dec_EndOfBuf;
+      if (data->bit_pos > 0) return BIO_Dec_EndOfBuf;
       return BIO_Dec_Complete;
     }
    
@@ -278,7 +276,7 @@ bitio decode API
     data->ptr += nbytes;		    
     data->bit_pos += (int)(nbytes * 8);
  
-    size_t val;
+    size_t val = 0;
     memmove(&val, data->ptr, sizeof(val));
     data->bit_buf = BIO_MemSwap(val);
  
@@ -293,10 +291,11 @@ bitio decode API
   void BIO_Validate()
   {
     BIO_Data bd;
- 
+    memset(&bd, 0, sizeof(BIO_Data));
+
     size_t const td_size = 256;
-    uint8_t test_data[td_size];
-    memset(test_data, 0, td_size);
+    uint8_t * test_data[td_size];
+    memset(test_data, 0xcc, td_size);
  
     BIO_Init(&bd, test_data, td_size, ENCODE);
  
@@ -304,47 +303,70 @@ bitio decode API
       BIO_WriteBits(&bd, 2, 2);  //10
       BIO_WriteBits(&bd, 12, 4); //1100
       if ((i % 2) == 0) {
-		BIO_WriteBits(&bd, 56, 6); //111000
-		BIO_WriteBits(&bd, 240, 8);  //11110000
+	BIO_WriteBits(&bd, 56, 6); //111000
+	BIO_WriteBits(&bd, 240, 8);  //11110000
       }
       else {
-		BIO_WriteBits(&bd, 7, 3); //111
-		BIO_WriteBits(&bd, 0, 3); //000
-		BIO_WriteBits(&bd, 30, 5); //11110
-		BIO_WriteBits(&bd, 0, 3); //000
+	BIO_WriteBits(&bd, 7, 3); //111
+	BIO_WriteBits(&bd, 0, 3); //000
+	BIO_WriteBits(&bd, 30, 5); //11110
+	BIO_WriteBits(&bd, 0, 3); //000
       }
     }
     BIO_WriteBits(&bd, 5815, 13);
+    BIO_WriteBits(&bd, 1240539, 21);
+    BIO_WriteBits(&bd, 9924317, 24);
+    BIO_WriteBits(&bd, (9924317 / 2), 23);
     size_t wcs = BIO_WriteCloseStatus(&bd, 255, 8);
+    
     BIOAssert(wcs > 0);
- 
+
     BIO_Data bdr;
+    memset(&bdr, 0, sizeof(BIO_Data));
+
     BIO_Init(&bdr, bd.start, wcs, DECODE);
  
     for (int i = 0; i < 6; ++i) {    
       BIOAssert(BIO_ReadBits(&bdr, 1) == 1); //1
       BIOAssert(BIO_ReadBits(&bdr, 1) == 0); //0
+      
       if ((i % 2) == 0) {
-		BIOAssert(BIO_ReadBits(&bdr, 5) == 25); //11001
-		BIOAssert(BIO_ReadBits(&bdr, 3) == 6); //110
-		BIOAssert(BIO_ReadBits(&bdr, 2) == 0); //00
-		BIOAssert(BIO_ReadBits(&bdr, 8) == 240); //11110000
+	BIOAssert(BIO_ReadBits(&bdr, 5) == 25); //11001
+	BIOAssert(BIO_ReadBits(&bdr, 3) == 6); //110
+	BIOAssert(BIO_ReadBits(&bdr, 2) == 0); //00
+	BIOAssert(BIO_ReadBits(&bdr, 8) == 240); //11110000
       }
-	  else 
-		BIOAssert(BIO_ReadBits(&bdr, 18) == 211184); //110011100011110000
-	}
+      else {
+	BIOAssert(BIO_ReadBits(&bdr, 18) == 211184); //110011100011110000
+      }
+
+      if (i < 5) { BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_Incomplete); }
+
+    }
+
+    BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_Incomplete);
    
     BIOAssert(BIO_ReadBits(&bdr, 10) == 726);
     BIOAssert(BIO_ReadBits(&bdr, 3) == 7);
+    BIOAssert(BIO_ReadBits(&bdr, 21) == 1240539);
+
+    BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_Incomplete);
+
+    BIOAssert(BIO_ReadBits(&bdr, 24) == 9924317);
+
+    if (BIO_Is32bits())
+      BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_Incomplete);   
+    else if (BIO_Is64bits())
+      BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);
+
+    BIOAssert(BIO_ReadBits(&bdr, 23) == (9924317 / 2));
+
+    BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);  //within last word, 
+
     BIOAssert(BIO_ReadBits(&bdr, 8) == 255);
-    //BIOAssert(BIO_ReadCloseStatus(&bdr));
-	BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);
 
-    /* TODO: exercise end of buffer functionality */
+    BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_EndOfBuf);
     
-	/* TODO: make sure reload returns expected values.  
-		Should probably drop breakpoint into reads during validate loop */     
-
     /* TODO: rethink ReadCloseStatus.  not what i want to be checking. */
   }
 
