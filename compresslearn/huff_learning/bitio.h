@@ -145,7 +145,7 @@ bitio decode API
   */
   static inline void BIO_WriteBits(BIO_Data *data, size_t val, size_t nbits)
   {
-    if (data->bit_pos < nbits)
+    if (data->bit_pos < (int)nbits)
       BIO_FlushBits(data);
     data->bit_pos -= (int)nbits;
     data->bit_buf |= ((val & BIO_mask[nbits]) << data->bit_pos);
@@ -230,7 +230,7 @@ bitio decode API
   */
   static inline size_t BIO_ReadBits(BIO_Data *data, size_t nbits)
   {
-    if (data->bit_pos < nbits)
+    if (data->bit_pos < (int)nbits)
       BIO_ReloadDataBuf(data);
     size_t const val = BIO_PeekBits(data, nbits);
     BIO_ConsumeBits(data, nbits);
@@ -291,10 +291,10 @@ bitio decode API
   void BIO_Validate()
   {
     BIO_Data bd;
-    memset(&bd, 0, sizeof(BIO_Data));
+    memset(&bd, 0xcc, sizeof(BIO_Data));
 
     size_t const td_size = 256;
-    uint8_t * test_data[td_size];
+    uint8_t test_data[td_size];
     memset(test_data, 0xcc, td_size);
  
     BIO_Init(&bd, test_data, td_size, ENCODE);
@@ -322,7 +322,7 @@ bitio decode API
     BIOAssert(wcs > 0);
 
     BIO_Data bdr;
-    memset(&bdr, 0, sizeof(BIO_Data));
+    memset(&bdr, 0xcc, sizeof(BIO_Data));
 
     BIO_Init(&bdr, bd.start, wcs, DECODE);
  
