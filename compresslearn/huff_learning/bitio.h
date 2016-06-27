@@ -217,6 +217,8 @@ bitio decode API
 
   static inline size_t BIO_PeekBits(BIO_Data *data, size_t nbits)
   {
+    if (data->bit_pos < (int)nbits)
+      BIO_ReloadDataBuf(data);
     return (data->bit_buf >> (data->bit_pos - nbits)) & BIO_mask[nbits]; 
   }
 
@@ -230,8 +232,6 @@ bitio decode API
   */
   static inline size_t BIO_ReadBits(BIO_Data *data, size_t nbits)
   {
-    if (data->bit_pos < (int)nbits)
-      BIO_ReloadDataBuf(data);
     size_t const val = BIO_PeekBits(data, nbits);
     BIO_ConsumeBits(data, nbits);
     return val;
