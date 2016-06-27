@@ -7,7 +7,9 @@
 #include "platform.h"
 
 /* TODO: Error handling */
-/* TODO: Docu, eg read/write left to right, big endian mem layout*/
+/* TODO: Docu, eg read/write left to right, big endian mem layout, 
+   don't read/write more than 24 bits / REGBITS, 
+   peek / consume don't handle past end-of-buffer, etc*/
 
 #ifdef NDEBUG
 #define BIOAssert(x)
@@ -209,29 +211,40 @@ bitio decode API
   /*
     Returns true if all bits have been read from memory.
   */
-
   static inline unsigned int BIO_ReadCloseStatus(BIO_Data *data)
   {
     return ((data->ptr == data->end) && ((REGBITS - data->bit_pos) == sizeof(data->bit_buf) * 8));
   }
 
+  /* 
+     NOTE: Don't peek more than REGBITS number of bits.
+     Reload first if want to peek more than bit_pos bits. 
+  */
   static inline size_t BIO_PeekBits(BIO_Data *data, size_t nbits)
   {
-    if (data->bit_pos < (int)nbits)
-      BIO_ReloadDataBuf(data);
+    BIOAssert(data->bit_pos > nbits);
     return (data->bit_buf >> (data->bit_pos - nbits)) & BIO_mask[nbits]; 
   }
 
+  /* 
+     NOTE: Don't consume more than REGBITS bits. 
+     Reload first if want to consume more than bit_pos bits. 
+  */
   static inline void BIO_ConsumeBits(BIO_Data *data, size_t nbits)
   {
+    BIOAssert(data->bit_pos > nbits);
     data->bit_pos -= (int)nbits;
   }
 
   /*
     Read nbits number of bits from bit_buf.
+    NOTE: Don't read more than REGBITS bits.
   */
   static inline size_t BIO_ReadBits(BIO_Data *data, size_t nbits)
   {
+    if (data->bit_pos < (int)nbits)
+      BIO_ReloadDataBuf(data);
+
     size_t const val = BIO_PeekBits(data, nbits);
     BIO_ConsumeBits(data, nbits);
     return val;
@@ -346,6 +359,8 @@ bitio decode API
 
     BIOAssert(BIO_ReloadDataBuf(&bdr) == BIO_Dec_Incomplete);
    
+    BIOAssert(BIO_PeekBits(&bdr, 13) == 5815);
+    
     BIOAssert(BIO_ReadBits(&bdr, 10) == 726);
     BIOAssert(BIO_ReadBits(&bdr, 3) == 7);
     BIOAssert(BIO_ReadBits(&bdr, 21) == 1240539);
